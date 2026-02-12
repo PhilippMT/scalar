@@ -22,10 +22,11 @@ vi.mock('postman-sandbox', () => ({
   },
 }))
 
-import { executeInPostmanSandbox } from './postman-sandbox-adapter'
+import { executeInPostmanSandbox, resetPostmanSandboxContextForTests } from './postman-sandbox-adapter'
 
 describe('postman-sandbox-adapter', () => {
-  beforeEach(() => {
+  beforeEach(async () => {
+    await resetPostmanSandboxContextForTests()
     vi.clearAllMocks()
   })
 
@@ -70,7 +71,7 @@ describe('postman-sandbox-adapter', () => {
     )
   })
 
-  it('cleans up sandbox listeners and context when response conversion fails', async () => {
+  it('cleans up sandbox listeners when response conversion fails', async () => {
     const response = new Response('payload', { status: 200 })
     response.text = () => Promise.reject(new Error('Body already used'))
 
@@ -95,6 +96,56 @@ describe('postman-sandbox-adapter', () => {
     expect(sandboxContextMock.off).toHaveBeenCalledWith('execution.assertion', expect.any(Function))
     expect(sandboxContextMock.off).toHaveBeenCalledWith('console', expect.any(Function))
     expect(sandboxContextMock.execute).not.toHaveBeenCalled()
+    expect(sandboxContextMock.dispose).not.toHaveBeenCalled()
+  })
+
+  it('reuses the same sandbox context across multiple executions', async () => {
+    sandboxContextMock.execute.mockImplementation((_target, _options, callback) => callback(undefined))
+    const scriptConsole = {
+      log: vi.fn(),
+      error: vi.fn(),
+      warn: vi.fn(),
+      info: vi.fn(),
+      debug: vi.fn(),
+      trace: vi.fn(),
+      table: vi.fn(),
+    }
+
+    await executeInPostmanSandbox({
+      script: 'pm.test("noop 1", () => {})',
+      response: new Response('{"ok":true}', { status: 200 }),
+      scriptConsole,
+    })
+
+    await executeInPostmanSandbox({
+      script: 'pm.test("noop 2", () => {})',
+      response: new Response('{"ok":true}', { status: 200 }),
+      scriptConsole,
+    })
+
+    expect(createContextMock).toHaveBeenCalledTimes(1)
+    expect(sandboxContextMock.dispose).not.toHaveBeenCalled()
+  })
+
+  it('disposes the shared sandbox context when reset is called', async () => {
+    sandboxContextMock.execute.mockImplementation((_target, _options, callback) => callback(undefined))
+
+    await executeInPostmanSandbox({
+      script: 'pm.test("noop", () => {})',
+      response: new Response('{"ok":true}', { status: 200 }),
+      scriptConsole: {
+        log: vi.fn(),
+        error: vi.fn(),
+        warn: vi.fn(),
+        info: vi.fn(),
+        debug: vi.fn(),
+        trace: vi.fn(),
+        table: vi.fn(),
+      },
+    })
+
+    await resetPostmanSandboxContextForTests()
+
     expect(sandboxContextMock.dispose).toHaveBeenCalledTimes(1)
   })
 })

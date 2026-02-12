@@ -45,6 +45,44 @@ const createContext = (): Promise<PostmanSandboxContext> =>
     })
   })
 
+const createContextStore = () => {
+  let contextPromise: Promise<PostmanSandboxContext> | null = null
+
+  const getOrCreateContext = async (): Promise<PostmanSandboxContext> => {
+    if (!contextPromise) {
+      contextPromise = createContext()
+    }
+
+    try {
+      return await contextPromise
+    } catch (error) {
+      contextPromise = null
+      throw error
+    }
+  }
+
+  const resetContext = async (): Promise<void> => {
+    if (!contextPromise) {
+      return
+    }
+
+    const context = await contextPromise
+    contextPromise = null
+    context.dispose()
+  }
+
+  return {
+    getOrCreateContext,
+    resetContext,
+  }
+}
+
+const { getOrCreateContext, resetContext } = createContextStore()
+
+export const resetPostmanSandboxContextForTests = async (): Promise<void> => {
+  await resetContext()
+}
+
 const toErrorMessage = (error: unknown): string => {
   if (error && typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
     return error.message
@@ -87,7 +125,7 @@ export const executeInPostmanSandbox = async ({
 }): Promise<void> => {
   const testResults: TestResult[] = []
   const startedAt = performance.now()
-  const sandboxContext = await createContext()
+  const sandboxContext = await getOrCreateContext()
 
   const handleAssertion = (_cursor: unknown, assertions: AssertionEvent[]) => {
     assertions.forEach((assertion) => upsertTestResult(testResults, assertion, startedAt))
@@ -143,6 +181,5 @@ export const executeInPostmanSandbox = async ({
   } finally {
     sandboxContext.off('execution.assertion', handleAssertion)
     sandboxContext.off('console', handleConsole)
-    sandboxContext.dispose()
   }
 }
