@@ -1,5 +1,16 @@
 # @scalar/sidebar
 
+## 0.7.35
+
+### Patch Changes
+
+#### Updated Dependencies
+
+- **@scalar/workspace-store@0.32.1**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+
+- **@scalar/components@0.19.4**
+
 ## 0.7.34
 
 ### Patch Changes

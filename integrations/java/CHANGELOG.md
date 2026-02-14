@@ -1,5 +1,14 @@
 # @scalar/java-integration
 
+## 0.5.50
+
+### Patch Changes
+
+#### Updated Dependencies
+
+- **@scalar/api-reference@1.44.20**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+
 ## 0.5.49
 
 ### Patch Changes

@@ -1,5 +1,15 @@
 # @scalar/api-client-react
 
+## 1.3.96
+
+### Patch Changes
+
+#### Updated Dependencies
+
+- **@scalar/api-client@2.27.1**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+  - [#8158](https://github.com/scalar/scalar/pull/8158): fix: disable all listeners when modal is closed
+
 ## 1.3.95
 
 ### Patch Changes

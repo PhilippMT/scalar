@@ -1,5 +1,14 @@
 # @scalar/aspnetcore
 
+## 2.12.41
+
+### Patch Changes
+
+#### Updated Dependencies
+
+- **@scalar/api-reference@1.44.20**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+
 ## 2.12.40
 
 ### Patch Changes

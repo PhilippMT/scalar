@@ -1,5 +1,20 @@
 # @scalar/agent-chat
 
+## 0.5.11
+
+### Patch Changes
+
+#### Updated Dependencies
+
+- **@scalar/workspace-store@0.32.1**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+
+- **@scalar/api-client@2.27.1**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+  - [#8158](https://github.com/scalar/scalar/pull/8158): fix: disable all listeners when modal is closed
+
+- **@scalar/components@0.19.4**
+
 ## 0.5.10
 
 ### Patch Changes

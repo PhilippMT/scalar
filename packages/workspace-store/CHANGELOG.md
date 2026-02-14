@@ -1,5 +1,11 @@
 # @scalar/workspace-store
 
+## 0.32.1
+
+### Patch Changes
+
+- [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+
 ## 0.32.0
 
 ### Minor Changes

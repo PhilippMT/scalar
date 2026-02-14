@@ -1,5 +1,14 @@
 # @scalar/api-reference-react
 
+## 0.8.57
+
+### Patch Changes
+
+#### Updated Dependencies
+
+- **@scalar/api-reference@1.44.20**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+
 ## 0.8.56
 
 ### Patch Changes

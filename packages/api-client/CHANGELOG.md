@@ -1,5 +1,25 @@
 # @scalar/api-client
 
+## 2.27.1
+
+### Patch Changes
+
+- [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+- [#8158](https://github.com/scalar/scalar/pull/8158): fix: disable all listeners when modal is closed
+
+#### Updated Dependencies
+
+- **@scalar/workspace-store@0.32.1**
+  - [#8159](https://github.com/scalar/scalar/pull/8159): fix: do not mutate document after ingress
+
+- **@scalar/oas-utils@0.6.42**
+
+- **@scalar/sidebar@0.7.35**
+
+- **@scalar/components@0.19.4**
+
+- **@scalar/use-codemirror@0.13.39**
+
 ## 2.27.0
 
 ### Minor Changes
