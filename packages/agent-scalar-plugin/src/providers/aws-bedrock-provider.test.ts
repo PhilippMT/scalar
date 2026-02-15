@@ -83,7 +83,6 @@ describe('aws-bedrock-provider', () => {
       expect(body.modelId).toBe('anthropic.claude-3-5-sonnet-20241022-v2:0')
       expect(body.system).toEqual([{ text: 'You are helpful.' }])
       expect(body.messages).toEqual([
-        { role: 'user', content: [{ text: 'You are helpful.' }] },
         { role: 'user', content: [{ text: 'Hello' }] },
         { role: 'assistant', content: [{ text: 'Hi there!' }] },
       ])

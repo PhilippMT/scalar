@@ -45,17 +45,18 @@ export function createAwsBedrockProvider(config: AwsBedrockProviderConfig): LlmP
     },
 
     buildRequestBody(request: ChatCompletionRequest): Record<string, unknown> {
+      const systemMessages = request.messages.filter((msg) => msg.role === 'system')
+      const conversationMessages = request.messages.filter((msg) => msg.role !== 'system')
+
       return {
         modelId: config.modelId,
-        messages: request.messages.map((msg) => ({
+        messages: conversationMessages.map((msg) => ({
           role: msg.role === 'assistant' ? 'assistant' : 'user',
           content: [{ text: msg.content }],
         })),
-        ...(request.messages.some((msg) => msg.role === 'system')
+        ...(systemMessages.length > 0
           ? {
-              system: request.messages
-                .filter((msg) => msg.role === 'system')
-                .map((msg) => ({ text: msg.content })),
+              system: systemMessages.map((msg) => ({ text: msg.content })),
             }
           : {}),
       }
