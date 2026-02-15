@@ -143,3 +143,54 @@ export const FeedbackPlugin = (): ApiReferencePlugin => {
   }
 }
 ```
+
+## Agent Scalar Plugin
+
+The `@scalar/agent-scalar-plugin` allows you to configure custom LLM providers for [Agent Scalar](https://scalar.com/products/agent/getting-started). Route AI chat requests to OpenAI-compatible endpoints or AWS Bedrock.
+
+```bash
+npm install @scalar/agent-scalar-plugin
+```
+
+### OpenAI-Compatible Provider
+
+```typescript
+import { AgentScalarPlugin } from '@scalar/agent-scalar-plugin'
+
+const configuration = {
+  url: 'https://registry.scalar.com/@scalar/apis/galaxy?format=json',
+  plugins: [
+    AgentScalarPlugin({
+      provider: {
+        type: 'openai',
+        baseUrl: 'https://api.openai.com/v1',
+        apiKey: 'sk-...',
+        model: 'gpt-4o',
+      },
+    }),
+  ],
+}
+```
+
+### AWS Bedrock Provider
+
+```typescript
+import { AgentScalarPlugin } from '@scalar/agent-scalar-plugin'
+
+const configuration = {
+  url: 'https://registry.scalar.com/@scalar/apis/galaxy?format=json',
+  plugins: [
+    AgentScalarPlugin({
+      provider: {
+        type: 'aws-bedrock',
+        region: 'us-east-1',
+        accessKeyId: 'AKIA...',
+        secretAccessKey: '...',
+        modelId: 'anthropic.claude-3-5-sonnet-20241022-v2:0',
+      },
+    }),
+  ],
+}
+```
+
+See the [`@scalar/agent-scalar-plugin` README](../packages/agent-scalar-plugin/README.md) for full documentation.
