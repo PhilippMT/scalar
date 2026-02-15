@@ -117,10 +117,11 @@ public final class ScalarHtmlRenderer {
             String json = OBJECT_MAPPER.writeValueAsString(config);
 
             ScalarLlmProvider llmProvider = getLlmProvider(properties);
-            if (llmProvider != null) {
+            if (llmProvider != null && json.endsWith("}")) {
                 // Inject the plugins array as a raw JavaScript expression.
-                // We replace the closing "}" of the JSON with a plugins property
-                // that references the inline plugin function.
+                // The JSON from ObjectMapper always produces a valid object ending with "}".
+                // We append the plugins property referencing the inline plugin function
+                // defined in the __PLUGIN_SCRIPT__ section of the HTML template.
                 json = json.substring(0, json.length() - 1)
                         + ",\"plugins\":[__scalarAgentPlugin()]}";
             }
@@ -155,6 +156,8 @@ public final class ScalarHtmlRenderer {
         sb.append("            hooks: {\n");
         sb.append("              onBeforeRequest: function(ctx) {\n");
         sb.append("                var req = ctx.request;\n");
+        // Match the default Agent Scalar chat endpoint used by the Vercel AI SDK transport.
+        // See: packages/agent-chat/src/state/state.ts (DefaultChatTransport target URL)
         sb.append("                if (req.url.indexOf('/vector/openapi/chat') === -1) return;\n");
 
         if ("openai".equals(llmProvider.getType())) {
@@ -227,11 +230,17 @@ public final class ScalarHtmlRenderer {
 
     /**
      * Builds the LLM endpoint URL for the configured provider.
+     *
+     * @param provider the LLM provider config (must have a non-null type)
+     * @return the fully-qualified endpoint URL, or empty string for unknown types
      */
     private static String buildLlmEndpointUrl(ScalarLlmProvider provider) {
         if ("openai".equals(provider.getType())) {
             String base = provider.getBaseUrl();
-            if (base != null && base.endsWith("/")) {
+            if (base == null || base.isEmpty()) {
+                return "/chat/completions";
+            }
+            if (base.endsWith("/")) {
                 base = base.substring(0, base.length() - 1);
             }
             return base + "/chat/completions";
