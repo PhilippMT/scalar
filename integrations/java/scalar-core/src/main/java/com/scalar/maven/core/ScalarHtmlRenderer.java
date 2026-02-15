@@ -2,12 +2,15 @@ package com.scalar.maven.core;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.scalar.maven.core.config.ScalarAgentOptions;
+import com.scalar.maven.core.config.ScalarLlmProvider;
 import com.scalar.maven.core.internal.ScalarConfiguration;
 import com.scalar.maven.core.internal.ScalarConfigurationMapper;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -73,10 +76,14 @@ public final class ScalarHtmlRenderer {
         // Serialize configuration to JSON
         String configurationJson = buildConfigurationJson(properties);
 
+        // Build plugin script if LLM provider is configured
+        String pluginScript = buildPluginScript(properties);
+
         // Replace placeholders
         return html
                 .replace("__JS_BUNDLE_URL__", bundleUrl)
                 .replace("__PAGE_TITLE__", pageTitle)
+                .replace("__PLUGIN_SCRIPT__", pluginScript)
                 .replace("__CONFIGURATION__", configurationJson);
     }
 
@@ -98,6 +105,8 @@ public final class ScalarHtmlRenderer {
 
     /**
      * Builds the configuration JSON for the Scalar API Reference.
+     * When an LLM provider is configured, the plugins array is injected
+     * as a raw JavaScript expression in the configuration.
      *
      * @param properties the properties to serialize
      * @return the configuration JSON as a string
@@ -105,10 +114,161 @@ public final class ScalarHtmlRenderer {
     private static String buildConfigurationJson(ScalarProperties properties) {
         try {
             ScalarConfiguration config = ScalarConfigurationMapper.map(properties);
-            return OBJECT_MAPPER.writeValueAsString(config);
+            String json = OBJECT_MAPPER.writeValueAsString(config);
+
+            ScalarLlmProvider llmProvider = getLlmProvider(properties);
+            if (llmProvider != null) {
+                // Inject the plugins array as a raw JavaScript expression.
+                // We replace the closing "}" of the JSON with a plugins property
+                // that references the inline plugin function.
+                json = json.substring(0, json.length() - 1)
+                        + ",\"plugins\":[__scalarAgentPlugin()]}";
+            }
+
+            return json;
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Failed to serialize Scalar configuration", e);
         }
+    }
+
+    /**
+     * Builds the inline plugin script tag when an LLM provider is configured.
+     * The script defines a factory function that creates an ApiClientPlugin
+     * matching the behavior of @scalar/agent-scalar-plugin.
+     *
+     * @param properties the properties to check for LLM provider config
+     * @return the plugin script tag or empty string
+     */
+    static String buildPluginScript(ScalarProperties properties) {
+        ScalarLlmProvider llmProvider = getLlmProvider(properties);
+        if (llmProvider == null) {
+            return "";
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n    <!-- Agent Scalar LLM Provider Plugin -->\n");
+        sb.append("    <script>\n");
+        sb.append("      function __scalarAgentPlugin() {\n");
+        sb.append("        return function() {\n");
+        sb.append("          return {\n");
+        sb.append("            name: '@scalar/agent-scalar-plugin',\n");
+        sb.append("            hooks: {\n");
+        sb.append("              onBeforeRequest: function(ctx) {\n");
+        sb.append("                var req = ctx.request;\n");
+        sb.append("                if (req.url.indexOf('/vector/openapi/chat') === -1) return;\n");
+
+        if ("openai".equals(llmProvider.getType())) {
+            appendOpenAiHeaders(sb, llmProvider);
+        } else if ("aws-bedrock".equals(llmProvider.getType())) {
+            appendBedrockHeaders(sb, llmProvider);
+        }
+
+        appendCustomHeaders(sb, llmProvider);
+
+        sb.append("                req.headers.set('X-Scalar-Llm-Provider', ");
+        sb.append(jsStringLiteral(llmProvider.getType()));
+        sb.append(");\n");
+
+        sb.append("                req.headers.set('X-Scalar-Llm-Endpoint', ");
+        sb.append(jsStringLiteral(buildLlmEndpointUrl(llmProvider)));
+        sb.append(");\n");
+
+        sb.append("              }\n");
+        sb.append("            }\n");
+        sb.append("          };\n");
+        sb.append("        };\n");
+        sb.append("      }\n");
+        sb.append("    </script>\n");
+
+        return sb.toString();
+    }
+
+    private static void appendOpenAiHeaders(StringBuilder sb, ScalarLlmProvider provider) {
+        sb.append("                req.headers.set('Content-Type', 'application/json');\n");
+        sb.append("                req.headers.set('Authorization', 'Bearer ' + ");
+        sb.append(jsStringLiteral(provider.getApiKey()));
+        sb.append(");\n");
+        if (provider.getOrganizationId() != null) {
+            sb.append("                req.headers.set('OpenAI-Organization', ");
+            sb.append(jsStringLiteral(provider.getOrganizationId()));
+            sb.append(");\n");
+        }
+    }
+
+    private static void appendBedrockHeaders(StringBuilder sb, ScalarLlmProvider provider) {
+        sb.append("                req.headers.set('Content-Type', 'application/json');\n");
+        sb.append("                req.headers.set('X-Aws-Access-Key-Id', ");
+        sb.append(jsStringLiteral(provider.getAccessKeyId()));
+        sb.append(");\n");
+        sb.append("                req.headers.set('X-Aws-Secret-Access-Key', ");
+        sb.append(jsStringLiteral(provider.getSecretAccessKey()));
+        sb.append(");\n");
+        sb.append("                req.headers.set('X-Aws-Region', ");
+        sb.append(jsStringLiteral(provider.getRegion()));
+        sb.append(");\n");
+        if (provider.getSessionToken() != null) {
+            sb.append("                req.headers.set('X-Aws-Session-Token', ");
+            sb.append(jsStringLiteral(provider.getSessionToken()));
+            sb.append(");\n");
+        }
+    }
+
+    private static void appendCustomHeaders(StringBuilder sb, ScalarLlmProvider provider) {
+        if (provider.getHeaders() != null) {
+            for (Map.Entry<String, String> entry : provider.getHeaders().entrySet()) {
+                sb.append("                req.headers.set(");
+                sb.append(jsStringLiteral(entry.getKey()));
+                sb.append(", ");
+                sb.append(jsStringLiteral(entry.getValue()));
+                sb.append(");\n");
+            }
+        }
+    }
+
+    /**
+     * Builds the LLM endpoint URL for the configured provider.
+     */
+    private static String buildLlmEndpointUrl(ScalarLlmProvider provider) {
+        if ("openai".equals(provider.getType())) {
+            String base = provider.getBaseUrl();
+            if (base != null && base.endsWith("/")) {
+                base = base.substring(0, base.length() - 1);
+            }
+            return base + "/chat/completions";
+        } else if ("aws-bedrock".equals(provider.getType())) {
+            return "https://bedrock-runtime." + provider.getRegion()
+                    + ".amazonaws.com/model/" + provider.getModelId() + "/converse";
+        }
+        return "";
+    }
+
+    /**
+     * Escapes a Java string for use as a JavaScript string literal.
+     */
+    static String jsStringLiteral(String value) {
+        if (value == null) {
+            return "''";
+        }
+        return "'" + value
+                .replace("\\", "\\\\")
+                .replace("'", "\\'")
+                .replace("\n", "\\n")
+                .replace("\r", "\\r")
+                .replace("</", "<\\/")
+                + "'";
+    }
+
+    /**
+     * Extracts the LLM provider from the agent options if present.
+     */
+    private static ScalarLlmProvider getLlmProvider(ScalarProperties properties) {
+        if (properties.getAgent() != null && properties.getAgent().getLlmProvider() != null) {
+            ScalarLlmProvider provider = properties.getAgent().getLlmProvider();
+            if (provider.getType() != null) {
+                return provider;
+            }
+        }
+        return null;
     }
 
     /**
