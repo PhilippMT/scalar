@@ -23,12 +23,12 @@ catalogs:
     '@headlessui/tailwindcss': ^0.2.2
     '@headlessui/vue': 1.7.23
     '@hono/node-server': ^1.19.7
-    '@modelcontextprotocol/sdk': 1.25.2
+    '@modelcontextprotocol/sdk': 1.26.0
     '@nestjs/cli': '^11.0.14'
     '@nestjs/common': '^11.1.11'
     '@nestjs/core': '^11.1.11'
     '@nestjs/platform-express': '^11.1.11'
-    '@nestjs/platform-fastify': '^11.1.11'
+    '@nestjs/platform-fastify': '^11.1.13'
     '@nestjs/schematics': '^11.0.9'
     '@nestjs/swagger': '^7.3.1'
     '@nestjs/testing': '^11.1.11'
@@ -63,7 +63,7 @@ catalogs:
     express: 5.1.0
     fake-indexeddb: 6.2.3
     fast-glob: ^3.3.3
-    fastify: ^5.3.3
+    fastify: ^5.7.2
     flatted: ^3.3.3
     fuse.js: ^7.1.0
     hono: 4.11.7

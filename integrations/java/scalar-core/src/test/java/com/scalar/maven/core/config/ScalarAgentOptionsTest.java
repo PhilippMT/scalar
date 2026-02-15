@@ -22,6 +22,7 @@ class ScalarAgentOptionsTest {
             assertThat(options).isNotNull();
             assertThat(options.getKey()).isNull();
             assertThat(options.getDisabled()).isNull();
+            assertThat(options.getLlmProvider()).isNull();
         }
     }
 
@@ -47,6 +48,21 @@ class ScalarAgentOptionsTest {
             assertThat(options.getDisabled()).isFalse();
             options.setDisabled(null);
             assertThat(options.getDisabled()).isNull();
+        }
+
+        @Test
+        @DisplayName("sets and gets llmProvider")
+        void setsAndGetsLlmProvider() {
+            ScalarAgentOptions options = new ScalarAgentOptions();
+            ScalarLlmProvider provider = new ScalarLlmProvider();
+            provider.setType("openai");
+            provider.setBaseUrl("https://api.openai.com/v1");
+            provider.setApiKey("sk-test");
+            provider.setModel("gpt-4o");
+            options.setLlmProvider(provider);
+
+            assertThat(options.getLlmProvider()).isNotNull();
+            assertThat(options.getLlmProvider().getType()).isEqualTo("openai");
         }
     }
 
@@ -75,6 +91,22 @@ class ScalarAgentOptionsTest {
             String json = new ObjectMapper().writeValueAsString(options);
 
             assertThat(json).isEqualTo("{}");
+        }
+
+        @Test
+        @DisplayName("excludes llmProvider from JSON serialization")
+        void excludesLlmProviderFromJson() throws JsonProcessingException {
+            ScalarAgentOptions options = new ScalarAgentOptions();
+            options.setKey("my-key");
+            ScalarLlmProvider provider = new ScalarLlmProvider();
+            provider.setType("openai");
+            options.setLlmProvider(provider);
+
+            String json = new ObjectMapper().writeValueAsString(options);
+
+            assertThat(json).contains("\"key\":\"my-key\"");
+            assertThat(json).doesNotContain("llmProvider");
+            assertThat(json).doesNotContain("openai");
         }
     }
 }
