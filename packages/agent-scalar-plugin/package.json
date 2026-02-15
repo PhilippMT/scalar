@@ -1,0 +1,45 @@
+{
+  "name": "@scalar/agent-scalar-plugin",
+  "description": "Plugin for configuring custom LLM providers with Agent Scalar",
+  "license": "MIT",
+  "author": "Scalar (https://github.com/scalar)",
+  "homepage": "https://github.com/scalar/scalar",
+  "bugs": "https://github.com/scalar/scalar/issues/new/choose",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/scalar/scalar.git",
+    "directory": "packages/agent-scalar-plugin"
+  },
+  "version": "0.1.0",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "scalar-build-esbuild",
+    "test": "vitest",
+    "types:build": "scalar-types-build",
+    "types:check": "scalar-types-check"
+  },
+  "type": "module",
+  "types": "./dist/index.d.ts",
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "dependencies": {
+    "@scalar/types": "workspace:*",
+    "zod": "catalog:*"
+  },
+  "devDependencies": {
+    "@scalar/build-tooling": "workspace:*",
+    "vite": "catalog:*",
+    "vitest": "catalog:*"
+  }
+}
